@@ -7,7 +7,7 @@ import {useDebounce} from 'react-use';
 import { updateSearchCount, getTrendingMovies} from './appwrite.js';
 
   const API_KEY = import.meta.env.VITE_OMDB_API_KEY;  
-  const API_BASE_URL = 'http://www.omdbapi.com';
+  const API_BASE_URL = 'https://www.omdbapi.com';
 
 
 
