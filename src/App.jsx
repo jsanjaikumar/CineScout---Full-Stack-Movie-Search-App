@@ -4,21 +4,17 @@ import hero from './assets/hero.png'
 import Spinner from './components/Spinner.jsx'
 import MovieCard from './components/MovieCard.jsx';
 import {useDebounce} from 'react-use';
+import { Link } from "react-router-dom";
 import { updateSearchCount, getTrendingMovies} from './appwrite.js';
+import MovieListSkeleton from "./components/MovieListSkeleton.jsx";
+import TrendingListSkeleton from "./components/TrendingListSkeleton.jsx";
+
+
 
   const API_KEY = import.meta.env.VITE_OMDB_API_KEY;  
   const API_BASE_URL = 'https://www.omdbapi.com';
 
 
-
-  // const API_OPTIONS = {
-  //   method: "GET",
-  //   headers: {
-  //     accept: "application/json",
-  //     Authorization: `Bearer ${API_KEY}`,
-  //   },
-  // };
-  
 
 const App = () => {
   const [debounceSearchTerm, setDebounceSearchTerm] = useState("");
@@ -29,14 +25,14 @@ const App = () => {
   const [moviesList, setMoviesList] = useState([]);
   const [trendingMovies, setTrendingMovies] = useState([]);
 
-  const [isLoading, setIsLoading] = useState(false);
+ const [isLoading, setIsLoading] = useState(false);
 
   // Debounce the search term to prevent making too many API requests
   // by waiting for the user to stop typing for 500ms
   useDebounce(() => setDebounceSearchTerm(searchTerm), 500, [searchTerm]);
 
   // random movies showing purpose in the beginning
-  const defaultMovies = ["Avengers", "Batman", "Beast", "Disney", "Titanic"];
+  const defaultMovies = [ "Beast"];
   const randomTitle =
     defaultMovies[Math.floor(Math.random() * defaultMovies.length)];
 
@@ -91,6 +87,8 @@ const App = () => {
     loadTrendingMovies();
   },[]);
 
+  
+
   return (
     <main>
       <div className="pattern" />
@@ -105,39 +103,48 @@ const App = () => {
           <Search searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
         </header>
 
-        {trendingMovies.length > 0 && (
+        {trendingMovies.length > 0 ? (
           <section className="trending">
-            <h2>Trending Movies</h2>
-
+            <h2>Trending</h2>
             <ul>
               {trendingMovies.map((movie, index) => (
                 <li key={movie.$id}>
                   <p>{index + 1}</p>
-                  <img src={movie.poster_url} alt={movie.movie_id} />
+                  <Link to={`/movie/${movie.movie_id}`}>
+                    <img src={movie.poster_url} alt={movie.movie_id} />
+                  </Link>
                 </li>
               ))}
             </ul>
           </section>
+        ) : (
+          <section className="trending">
+            <TrendingListSkeleton count={5} />
+          </section>
         )}
 
         <section className="all-movies">
-          <h2>Popular</h2>
-
           {isLoading ? (
-            <Spinner />
+            <>
+              <MovieListSkeleton count={10} />
+            </>
           ) : errorMessage ? (
-            <p className="text-red-500">{errorMessage}</p>
+            <>
+              <h2>Popular</h2>
+              <p className="text-red-500">{errorMessage}</p>
+            </>
           ) : (
-            <ul>
-              {moviesList.map((movie) => (
-                <MovieCard key={movie.imdbID} movie={movie} />
-              ))}
-            </ul>
+            <>
+              <h2>Popular</h2>
+              <ul>
+                {moviesList.map((movie) => (
+                  <MovieCard key={movie.imdbID} movie={movie} />
+                ))}
+              </ul>
+            </>
           )}
         </section>
       </div>
-
-
     </main>
   );
 }
