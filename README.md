@@ -8,7 +8,7 @@ CineScout is a modern, full-stack movie search and discovery web application bui
 
 ## 🚀 Live Demo
 
-🔗 [] 
+🔗 [https://cine-scout-full-stack-movie-search.vercel.app/] 
 
 ---
 
