@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 import { updateSearchCount, getTrendingMovies} from './appwrite.js';
 import MovieListSkeleton from "./components/MovieListSkeleton.jsx";
 import TrendingListSkeleton from "./components/TrendingListSkeleton.jsx";
+import CineScopeChatbot from "./components/CineScopeChatBot.jsx"
 
 
 
@@ -145,6 +146,7 @@ const App = () => {
           )}
         </section>
       </div>
+      <CineScopeChatbot />
     </main>
   );
 }

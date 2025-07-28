@@ -9,7 +9,15 @@ const MovieCard = ({
   return (
     <Link to={`/movie/${imdbID}`}>
       <div className="movie-card">
-        <img src={Poster !== "N/A" ? Poster : noMovie} alt="" />
+        <img
+          src={Poster && Poster !== "N/A" ? Poster : noMovie}
+          alt={Title}
+          onError={(e) => {
+            e.target.onerror = null; // prevent infinite loop
+            e.target.src = noMovie;
+          }}
+          
+        />
 
         <h3 className="mt-4">{Title}</h3>
 

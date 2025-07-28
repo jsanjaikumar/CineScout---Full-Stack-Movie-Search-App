@@ -167,15 +167,6 @@ const MovieDetails = () => {
                     <p>{Director || "N/A"}</p>
                   </div>
                   <div className="info-language">
-                    <h2>Language</h2>
-                    <p>{Language || "N/A"}</p>
-                  </div>
-                  <div className="info-awards">
-                    <h2>Awards</h2>
-                    <p> {Awards || "N/A"}</p>
-                  </div>
-                  <div className="info-revenue">
-                    <h2>BoxOffice </h2>
                     <p>{BoxOffice || "N/A"}</p>
                   </div>
                   <div className="info-production">
