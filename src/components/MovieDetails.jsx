@@ -167,6 +167,7 @@ const MovieDetails = () => {
                     <p>{Director || "N/A"}</p>
                   </div>
                   <div className="info-language">
+                    <h2>BoxOffice</h2>
                     <p>{BoxOffice || "N/A"}</p>
                   </div>
                   <div className="info-production">
