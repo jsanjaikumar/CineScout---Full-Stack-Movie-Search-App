@@ -1,94 +1,103 @@
-import React, { useState, useEffect } from 'react'
-import Search  from './components/Search.jsx';
-import hero from './assets/hero.png'
-import Spinner from './components/Spinner.jsx'
-import MovieCard from './components/MovieCard.jsx';
-import {useDebounce} from 'react-use';
+import React, { useState } from "react";
+import Search from "./components/Search.jsx";
+import hero from "./assets/hero.png";
+import Spinner from "./components/Spinner.jsx";
+import MovieCard from "./components/MovieCard.jsx";
+import { useDebounce } from "react-use";
 import { Link } from "react-router-dom";
-import { updateSearchCount, getTrendingMovies} from './appwrite.js';
+import { updateSearchCount, getTrendingMovies } from "./appwrite.js";
 import MovieListSkeleton from "./components/MovieListSkeleton.jsx";
 import TrendingListSkeleton from "./components/TrendingListSkeleton.jsx";
-import CineScopeChatbot from "./components/CineScopeChatBot.jsx"
+import CineScopeChatbot from "./components/CineScopeChatBot.jsx";
+import { useQuery } from "@tanstack/react-query";
+import axios from "axios";
 
+const API_KEY = import.meta.env.VITE_OMDB_API_KEY;
+const API_BASE_URL = "https://www.omdbapi.com";
 
+const defaultMovies = ["Beast", "Titanic"];
+const randomTitle =
+  defaultMovies[Math.floor(Math.random() * defaultMovies.length)];
 
-  const API_KEY = import.meta.env.VITE_OMDB_API_KEY;  
-  const API_BASE_URL = 'https://www.omdbapi.com';
+const fetchMovies = async (query = "") => {
+  const params = query
+    ? { s: query, apikey: API_KEY }
+    : { s: randomTitle, apikey: API_KEY };
 
+  const response = await axios.get(API_BASE_URL, {
+    params,
+    validateStatus: (status) => status >= 200 && status < 500, // let OMDb handle errors in payload
+  });
 
+  const data = response.data;
+
+  if (response.status !== 200) {
+    throw new Error("Failed to fetch response of movies");
+  }
+  if (data.Response === "False") {
+    throw new Error(data.Error || "Failed to Fetch Movie");
+  }
+
+  return data.Search || [];
+};
+
+const fetchTrending = async () => {
+  const movies = await getTrendingMovies();
+  return movies;
+};
 
 const App = () => {
-  const [debounceSearchTerm, setDebounceSearchTerm] = useState("");
-
   const [searchTerm, setSearchTerm] = useState("");
+  const [debounceSearchTerm, setDebounceSearchTerm] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
-  const [moviesList, setMoviesList] = useState([]);
-  const [trendingMovies, setTrendingMovies] = useState([]);
-
- const [isLoading, setIsLoading] = useState(false);
-
-  // Debounce the search term to prevent making too many API requests
-  // by waiting for the user to stop typing for 500ms
   useDebounce(() => setDebounceSearchTerm(searchTerm), 500, [searchTerm]);
 
-  // random movies showing purpose in the beginning
-  const defaultMovies = [ "Beast"];
-  const randomTitle =
-    defaultMovies[Math.floor(Math.random() * defaultMovies.length)];
-
-  const fetchMovies = async (query = "") => {
-    setIsLoading(true);
-    setErrorMessage("");
-    try {
-      const endpoint = query
-        ? `${API_BASE_URL}/?&apikey=${API_KEY}&s=${encodeURIComponent(query)}`
-        : `${API_BASE_URL}/?apikey=${API_KEY}&s=${randomTitle}`;
-
-      const response = await fetch(endpoint);
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch response of movies");
+  const {
+    data: moviesList = [],
+    isLoading: isMoviesLoading,
+    isError: isMoviesError,
+    error: moviesErrorObj,
+  } = useQuery({
+    queryKey: ["movies", debounceSearchTerm],
+    queryFn: () => fetchMovies(debounceSearchTerm),
+    keepPreviousData: true,
+    staleTime: 1000 * 60 * 2,
+    enabled: true,
+    onSuccess: (data) => {
+      if (debounceSearchTerm && Array.isArray(data) && data.length > 0) {
+        updateSearchCount(debounceSearchTerm, data[0]).catch((err) =>
+          console.error("Error updating search count:", err)
+        );
       }
-      const data = await response.json();
+    },
+    onError: (err) => {
+      setErrorMessage(
+        err.message || "Failed to fetch movies. Please try again later"
+      );
+    },
+  });
 
-      if (data.Response === "False") {
-        setErrorMessage(data.error || "Failed to Fetch Movie");
-        setMoviesList([]);
-        return;
-      }
-      setMoviesList(data.Search || []);
-    
-      if (query && Array.isArray(data.Search) && data.Search.length > 0) {
-        await updateSearchCount(query, data.Search[0]);
-      }
+  const {
+    data: trendingMovies = [],
+    isLoading: isTrendingLoading,
+    isError: isTrendingError,
+  } = useQuery({
+    queryKey: ["trendingMovies"],
+    queryFn: fetchTrending,
+    staleTime: 1000 * 60 * 5,
+    onError: (err) => {
+      console.error(`Error fetching trending movies: ${err}`);
+    },
+  });
 
-    } catch (error) {
-      console.error(`Error fetching movies: ${error}`);
-      setErrorMessage("Failed to fetch movies. Please try again later");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-    const loadTrendingMovies = async () => {
-      try{
-        const movies = await getTrendingMovies();
-
-        setTrendingMovies(movies);
-      } catch (error) {
-        console.error(`Error fetching trending movies: ${error}`);
-      }
-    }
-
-  useEffect(() => {
-    fetchMovies(debounceSearchTerm);
-  }, [debounceSearchTerm]);
-
-  useEffect(() => {
-    loadTrendingMovies();
-  },[]);
-
-  
+  const showError =
+    isMoviesError ||
+    (!!errorMessage && !isMoviesLoading && moviesList.length === 0);
+  const displayErrorMessage = isMoviesError
+    ? moviesErrorObj?.message ||
+      "Failed to fetch movies. Please try again later"
+    : errorMessage;
 
   return (
     <main>
@@ -104,7 +113,7 @@ const App = () => {
           <Search searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
         </header>
 
-        {trendingMovies.length > 0 ? (
+        {trendingMovies && trendingMovies.length > 0 ? (
           <section className="trending">
             <h2>Trending</h2>
             <ul>
@@ -118,21 +127,26 @@ const App = () => {
               ))}
             </ul>
           </section>
-        ) : (
+        ) : isTrendingLoading ? (
           <section className="trending">
             <TrendingListSkeleton count={5} />
+          </section>
+        ) : (
+          <section className="trending">
+            <h2>Trending</h2>
+            {isTrendingError && (
+              <p className="text-red-500">Failed to load trending movies.</p>
+            )}
           </section>
         )}
 
         <section className="all-movies">
-          {isLoading ? (
-            <>
-              <MovieListSkeleton count={10} />
-            </>
-          ) : errorMessage ? (
+          {isMoviesLoading ? (
+            <MovieListSkeleton count={10} />
+          ) : showError ? (
             <>
               <h2>Popular</h2>
-              <p className="text-red-500">{errorMessage}</p>
+              <p className="text-red-500">{displayErrorMessage}</p>
             </>
           ) : (
             <>
@@ -149,6 +163,6 @@ const App = () => {
       <CineScopeChatbot />
     </main>
   );
-}
+};
 
-export default App
+export default App;
