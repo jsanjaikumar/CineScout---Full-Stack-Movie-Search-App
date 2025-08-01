@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import MovieDetailsSkeleton from "./MovieDetailsSkeleton";
+import MovieDetailsSkeleton from "../skeltonsUI/MovieDetailsSkeleton";
 import { useState } from "react";
 import star_icon from "../assets/star.svg";
 import Spinner from "./Spinner";
