@@ -1,9 +1,15 @@
 import { useParams, useNavigate } from "react-router-dom";
 import MovieDetailsSkeleton from "../skeltonsUI/MovieDetailsSkeleton";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import {
+  addToWatchlist,
+  removeFromWatchlist,
+  isInWatchlist,
+} from "../utils/watchlist.js";
 import star_icon from "../assets/star.svg";
 import Spinner from "./Spinner";
 import { useQuery } from "@tanstack/react-query";
+import { Heart, Plus } from "lucide-react";
 import axios from "axios";
 
 const API_KEY = import.meta.env.VITE_OMDB_API_KEY;
@@ -35,11 +41,13 @@ const fetchMovie = async (id) => {
 const MovieDetails = () => {
   const { id } = useParams();
   const [animate, setAnimate] = useState(false);
+  const [inWatchlist, setInWatchlist] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   const {
     data: movie,
-    isLoading,
+    isLoading: isMovieLoading,
     isError,
     error,
     refetch,
@@ -51,6 +59,55 @@ const MovieDetails = () => {
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
+  // Check if movie is in watchlist
+  useEffect(() => {
+    const checkWatchlistStatus = () => {
+      if (id) {
+        try {
+          const isInList = isInWatchlist(id);
+          setInWatchlist(isInList);
+        } catch (error) {
+          console.error("Error checking watchlist status:", error);
+        }
+      }
+    };
+
+    checkWatchlistStatus();
+  }, [id]);
+
+  const handleWatchlistToggle = () => {
+    if (!movie) return;
+
+    setIsLoading(true);
+
+    const movieData = {
+      imdbID: id,
+      Title: movie.Title,
+      Poster: movie.Poster,
+      Year: movie.Year,
+      Type: movie.Type,
+      imdbRating: movie.imdbRating,
+      language: movie.Language,
+    };
+
+    try {
+      if (inWatchlist) {
+        removeFromWatchlist(id);
+        setInWatchlist(false);
+      } else {
+        addToWatchlist(movieData);
+        setInWatchlist(true);
+      }
+
+      // Dispatch custom event to notify other components
+      window.dispatchEvent(new CustomEvent("watchlistUpdated"));
+    } catch (error) {
+      console.error("Failed to update watchlist:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleVisitHome = () => {
     setAnimate(true);
     setTimeout(() => {
@@ -58,7 +115,7 @@ const MovieDetails = () => {
     }, 300);
   };
 
-  if (isLoading) {
+  if (isMovieLoading) {
     return <MovieDetailsSkeleton />;
   }
 
@@ -124,12 +181,70 @@ const MovieDetails = () => {
               </div>
             </div>
 
-            <div className="frame3 ">
+            <div className="frame3">
+              {/* Rating Button */}
               <button className="btn">
                 {star_icon && (
                   <img src={star_icon} alt="Star Icon" className="w-5 h-5" />
                 )}
-                {imdbRating || "N/A"}/10 ({formattedVotes})
+                <span className="truncate">
+                  {imdbRating || "N/A"}/10 ({formattedVotes})
+                </span>
+              </button>
+
+              {/* Watchlist Button */}
+              <button
+                onClick={handleWatchlistToggle}
+                disabled={isLoading}
+                className={`watchlist-btn flex items-center justify-center gap-2 px-3 py-2.5 h-[42px] rounded-md font-semibold transition-all duration-200 flex-shrink-0 ${
+                  inWatchlist
+                    ? "bg-red-500 text-white hover:bg-red-600 active:bg-red-700"
+                    : "bg-gradient-to-r from-purple-500 to-purple-600 text-white hover:from-purple-600 hover:to-purple-700 active:from-purple-700 active:to-purple-800"
+                } ${
+                  isLoading
+                    ? "opacity-50 cursor-not-allowed"
+                    : "cursor-pointer shadow-lg hover:shadow-xl"
+                } 
+                text-sm sm:text-sm md:text-base
+                w-[140px] sm:w-[160px] md:w-[180px] lg:w-[200px] xl:w-[220px]`}
+                title={
+                  inWatchlist ? "Remove from watchlist" : "Add to watchlist"
+                }
+              >
+                {isLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span className="hidden xs:inline ml-1 truncate">
+                      Loading...
+                    </span>
+                  </>
+                ) : inWatchlist ? (
+                  <>
+                    <Heart
+                      size={16}
+                      fill="currentColor"
+                      className="flex-shrink-0"
+                    />
+                    <span className="truncate">
+                      <span className="hidden md:inline">
+                        Remove from Watchlist
+                      </span>
+                      <span className="hidden sm:inline md:hidden">Remove</span>
+                      <span className="sm:hidden">Remove</span>
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Plus size={16} className="flex-shrink-0" />
+                    <span className="truncate">
+                      <span className="hidden md:inline">Add to Watchlist</span>
+                      <span className="hidden sm:inline md:hidden">
+                        Add Watchlist
+                      </span>
+                      <span className="sm:hidden">Add</span>
+                    </span>
+                  </>
+                )}
               </button>
             </div>
           </div>

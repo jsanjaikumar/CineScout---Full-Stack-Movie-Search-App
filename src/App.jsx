@@ -1,16 +1,17 @@
-import React, { useState } from "react";
+import React, { useState, lazy, Suspense } from "react";
 import Search from "./components/Search.jsx";
 import hero from "./assets/hero.png";
 import Spinner from "./components/Spinner.jsx";
-import MovieCard from "./components/MovieCard.jsx";
+//import MovieCard from "./components/MovieCard.jsx";
 import { useDebounce } from "react-use";
 import { Link } from "react-router-dom";
 import { updateSearchCount, getTrendingMovies } from "./appwrite.js";
 import MovieListSkeleton from "./skeltonsUI/MovieListSkeleton.jsx";
 import TrendingListSkeleton from "./skeltonsUI/TrendingListSkeleton.jsx";
-import CineScopeChatbot from "./components/CineScopeChatBot.jsx";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
+
+const MovieCards = lazy(() => import("./components/MovieCard.jsx"));
 
 const API_KEY = import.meta.env.VITE_OMDB_API_KEY;
 const API_BASE_URL = "https://www.omdbapi.com";
@@ -151,16 +152,17 @@ const App = () => {
           ) : (
             <>
               <h2>Popular</h2>
-              <ul>
-                {moviesList.map((movie) => (
-                  <MovieCard key={movie.imdbID} movie={movie} />
-                ))}
-              </ul>
+              <Suspense fallback={"isLoading"}>
+                <ul>
+                  {moviesList.map((movie) => (
+                    <MovieCards key={movie.imdbID} movie={movie} />
+                  ))}
+                </ul>
+              </Suspense>
             </>
           )}
         </section>
       </div>
-      <CineScopeChatbot />
     </main>
   );
 };
