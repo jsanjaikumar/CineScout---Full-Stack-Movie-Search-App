@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { getWatchlist, removeFromWatchlist } from "../utils/watchlist.js";
 import { Link } from "react-router-dom";
 import { Trash2, ArrowLeft } from "lucide-react";
-import star_icon from "../assets/star.svg";
 import noMovie from "../assets/no-movie.png";
 import Spinner from "./Spinner.jsx";
 
@@ -14,7 +13,6 @@ const Watchlist = () => {
   const loadWatchlist = () => {
     try {
       const watchlistData = getWatchlist();
-      // Sort by addedAt descending (newest first)
       const sortedWatchlist = watchlistData.sort(
         (a, b) => new Date(b.addedAt) - new Date(a.addedAt)
       );
@@ -29,7 +27,6 @@ const Watchlist = () => {
   useEffect(() => {
     loadWatchlist();
 
-    // Listen for watchlist updates from other components
     const handleWatchlistUpdate = () => {
       loadWatchlist();
     };
@@ -47,8 +44,6 @@ const Watchlist = () => {
     try {
       removeFromWatchlist(imdbID);
       setWatchlist((prev) => prev.filter((movie) => movie.imdbID !== imdbID));
-
-      // Dispatch custom event to notify other components
       window.dispatchEvent(new CustomEvent("watchlistUpdated"));
     } catch (error) {
       console.error("Failed to remove from watchlist:", error);
@@ -142,13 +137,6 @@ const Watchlist = () => {
 
                     <div className="mt-2 flex items-center justify-between">
                       <div className="flex items-center gap-1">
-                        <img src={star_icon} alt="rating" className="w-4 h-4" />
-                        <span className="text-white font-bold text-sm">
-                          {movie.imdbRating
-                            ? movie.imdbRating.toFixed(1)
-                            : "N/A"}
-                        </span>
-                        <span className="text-gray-100 text-sm">•</span>
                         <span className="text-gray-100 text-sm capitalize">
                           {movie.language}
                         </span>
