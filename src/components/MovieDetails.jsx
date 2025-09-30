@@ -208,7 +208,7 @@ const MovieDetails = () => {
                 text-sm sm:text-sm md:text-base
                 w-[140px] sm:w-[160px] md:w-[180px] lg:w-[200px] xl:w-[220px]`}
                 title={
-                  inWatchlist ? "Remove from watchlist" : "Add to watchlist"
+                  inWatchlist ? "Remove" : "Save to watchlist"
                 }
               >
                 {isLoading ? (
